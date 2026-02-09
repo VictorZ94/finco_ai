@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  sessions      Session[]
+  accounts      Account[]
+  
+  // App specific
+  phone             String?
+  photo_url         String?
+  messages          Messages[]
+  financialAccounts FinancialAccounts[]
+  transactions      Transactions[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("verification")
+}
+
+// Renamed from Accounts to avoid conflict with Auth Account
+model FinancialAccounts {
+  id     String  @id @default(uuid())
+  code   String  // e.g., "1", "11", "1105", "110505"
+  name   String
+  nature Nature  // DEBIT/CREDIT
+  level  Int     // 1: Clase, 2: Grupo, 3: Cuenta, 4: Subcuenta
+  
+  parentId String?
+  parent   FinancialAccounts? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children FinancialAccounts[] @relation("AccountHierarchy")
+
+  canReceiveMovement Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledgerEntries LedgerEntries[]
+  
+  @@unique([userId, code])
+  @@map("financial_accounts")
+}
+
+model Messages {
+  id      String @id @default(uuid())
+  content String
+  role    Role   @default(ASSISTANT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transactions[]
+}
+
+model Transactions {
+  id          String   @id @default(uuid())
+  numbering   String
+  description String?
+  date        DateTime @default(now())
+  amount      Decimal  @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageId     String
+  message       Messages        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  ledgerEntries LedgerEntries[]
+}
+
+model LedgerEntries {
+  id     String  @id @default(uuid())
+  debit  Decimal @db.Decimal(18, 2)
+  credit Decimal @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactionId String
+  transaction   Transactions @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  accountId     String
+  account       FinancialAccounts     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  USER
+  ASSISTANT
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  INCOME
+  EXPENSE
+  EQUITY
+}
+
+enum Nature {
+  DEBIT
+  CREDIT
+}
