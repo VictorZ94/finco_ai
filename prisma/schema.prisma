@@ -90,6 +90,7 @@ model FinancialAccounts {
   parentId String?
   parent   FinancialAccounts? @relation("AccountHierarchy", fields: [parentId], references: [id])
   children FinancialAccounts[] @relation("AccountHierarchy")
+  accountType AccountType
 
   canReceiveMovement Boolean @default(false)
 
