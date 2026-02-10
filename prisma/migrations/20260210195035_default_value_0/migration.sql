@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "LedgerEntries" ALTER COLUMN "debit" SET DEFAULT 0,
+ALTER COLUMN "credit" SET DEFAULT 0;
