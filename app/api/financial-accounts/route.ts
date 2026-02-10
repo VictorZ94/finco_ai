@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
       const accounts = await prisma.financialAccounts.findMany({
         where: {
-          userId: session.user.id,
+          userId: session!.user.id,
           ...(movableOnly ? { canReceiveMovement: true } : {}),
         },
         orderBy: { code: "asc" },
@@ -22,16 +22,16 @@ export async function GET(request: Request) {
 
       // Get direct sums for each account
       const balances = await prisma.ledgerEntries.groupBy({
-        by: ['accountId'],
+        by: ["accountId"],
         _sum: {
           debit: true,
           credit: true,
         },
         where: {
           account: {
-            userId: session.user.id
-          }
-        }
+            userId: session!.user.id,
+          },
+        },
       });
 
       // Map balances to account IDs for easy lookup
@@ -44,10 +44,12 @@ export async function GET(request: Request) {
       });
 
       // Calculate hierarchical totals
-      const calculateTotals = (accountId: string): { totalDebit: number; totalCredit: number } => {
+      const calculateTotals = (
+        accountId: string,
+      ): { totalDebit: number; totalCredit: number } => {
         const direct = balanceMap[accountId] || { debit: 0, credit: 0 };
         const children = accounts.filter((a) => a.parentId === accountId);
-        
+
         let totalDebit = direct.debit;
         let totalCredit = direct.credit;
 
