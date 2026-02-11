@@ -1,5 +1,12 @@
+import { SYSTEM_PROMPT } from "@/constants/prompt";
 import { Role } from "@/generated/prisma/client";
 import { auth } from "@/lib/auth";
+import {
+  findAccountByName,
+  getCategories,
+  getPaymentMethods,
+  getUserContext,
+} from "@/lib/helpers";
 import { prisma } from "@/lib/prisma";
 import {
   AIMessage,
@@ -53,75 +60,6 @@ type APIResponse = {
   error?: string;
 };
 
-// --- Helper Functions ---
-
-async function getUserContext(userId: string) {
-  // Fetch last 5 messages
-  const history = await prisma.messages.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
-
-  // Reverse to chronological order for the LLM
-  return history.reverse().map((msg) => ({
-    role: msg.role === Role.USER ? "user" : "assistant",
-    content: msg.content,
-  }));
-}
-
-async function getCategories(userId: string) {
-  // Fetch movable accounts that belong to Income (4) or Expenses (5)
-  const accounts = await prisma.financialAccounts.findMany({
-    where: {
-      userId,
-      canReceiveMovement: true,
-      OR: [
-        { code: { startsWith: '4' } },
-        { code: { startsWith: '5' } },
-      ]
-    },
-    select: { name: true, code: true },
-  });
-
-  return accounts.map((a) => ({ 
-    nombre: a.name, 
-    tipo: a.code.startsWith('4') ? "INCOME" : "EXPENSE" 
-  }));
-}
-
-async function getPaymentMethods(userId: string) {
-  // Fetch movable accounts that belong to Assets (1), Liabilities (2), or Equity (3)
-  // Restricted: Agent should not write to 1 or 11 (though they are not movable, we ensure here)
-  const accounts = await prisma.financialAccounts.findMany({
-    where: {
-      userId,
-      canReceiveMovement: true,
-      OR: [
-        { code: { startsWith: '1' } },
-        { code: { startsWith: '2' } },
-        { code: { startsWith: '3' } },
-      ],
-      NOT: [
-        { code: '1' },
-        { code: '11' }
-      ]
-    },
-    select: { id: true, name: true, code: true },
-  });
-  return accounts;
-}
-
-async function findAccountByName(userId: string, name: string) {
-  return await prisma.financialAccounts.findFirst({
-    where: {
-      userId,
-      name: { equals: name, mode: "insensitive" },
-      canReceiveMovement: true
-    },
-  });
-}
-
 // --- Main Handler ---
 
 export async function POST(request: Request) {
@@ -163,42 +101,6 @@ export async function POST(request: Request) {
       .map((p) => `- ${p.name}`)
       .join("\n");
 
-    // 3. Build System Prompt
-    const SYSTEM_PROMPT = `Eres un asistente financiero que ayuda a registrar transacciones de forma conversacional.
-
-REGLAS ESTRICTAS:
-1. Extrae SIEMPRE: monto, tipo (ingreso/gasto), categoría.
-2. Si falta información crítica (monto o tipo), pregunta amablemente en 'pregunta_aclaratoria'.
-3. Usa lenguaje simple y amigable, NUNCA términos contables técnicos.
-4. Responde SOLO en formato JSON válido que cumpla el esquema proporcionado.
-5. La confianza debe ser 0.8+ para registro automático, sino solicita confirmación (confianza baja).
-6. Fechas: interpreta "hoy", "ayer", "la semana pasada" correctamente a formato ISO (YYYY-MM-DD).
-
-CATEGORÍAS DISPONIBLES (tienes que elegir una de estas si es posible):
-${categoryList || "- (No hay categorías definidas, sugiere crear una)"}
-
-MÉTODOS DE PAGO DISPONIBLES (para gastos) / CUENTAS DE DESTINO (para ingresos):
-${paymentMethodList || "- (No hay métodos de pago definidos, usa 'Efectivo' por defecto)"}
-
-FORMATO DE RESPUESTA (JSON):
-{
-  "monto": number,
-  "tipo": "ingreso" | "gasto",
-  "categoria": string, // debe coincidir exactamente con lista
-  "subcategoria": string | null,
-  "fecha": string, // ISO date
-  "metodo_pago": string | null, // debe coincidir con la lista de métodos de pago
-  "confianza": number, // 0.0 a 1.0
-  "pregunta_aclaratoria": string | null, // si necesitas más info
-  "razonamiento": string // breve explicación de tu clasificación
-}
-
-IMPORTANTE:
-- Si el usuario menciona varios gastos/ingresos, procesa solo UNO y sugiere registrar los demás después.
-- Se estricto con las categorías.
-- Si no estás seguro de la categoría, pon confianza < 0.8 y sugiere opciones.
-`;
-
     // 4. Call Langchain / OpenAI
     const model = new ChatOpenAI({
       modelName: "gpt-4o-mini", // Or gpt-3.5-turbo if preferred for cost
@@ -208,7 +110,7 @@ IMPORTANTE:
 
     // Construct the full prompt with history
     const messages = [
-      new SystemMessage(SYSTEM_PROMPT),
+      new SystemMessage(SYSTEM_PROMPT(categoryList, paymentMethodList)),
       ...history.map((h) =>
         h.role === "user"
           ? new HumanMessage(h.content)
