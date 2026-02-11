@@ -1,10 +1,8 @@
 import { auth } from "@/lib/auth";
-import { verifyServerAuth } from "@/lib/middlewares/verify-auth";
+import { Session, verifyServerAuth } from "@/lib/middlewares/verify-auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-
-type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
 
 export async function GET(request: Request) {
   return verifyServerAuth(async (session: Session) => {
