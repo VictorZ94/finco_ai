@@ -7,47 +7,12 @@ import {
   getPaymentMethods,
   getUserContext,
 } from "@/lib/helpers";
+import { getStructuredChatCompletion, TransactionParsed } from "@/lib/llm-config";
 import { prisma } from "@/lib/prisma";
-import {
-  AIMessage,
-  HumanMessage,
-  SystemMessage,
-} from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 
 // --- Configuration & Types ---
-
-// Schema de validación Zod para respuesta del LLM
-const TransactionSchema = z.object({
-  monto: z.number().describe("El monto de la transacción."),
-  tipo: z
-    .enum(["ingreso", "gasto"])
-    .describe("El tipo de transacción: ingreso o gasto."),
-  categoria: z
-    .string()
-    .describe(
-      "La categoría de la transacción, debe coincidir con la lista proporcionada.",
-    ),
-  subcategoria: z.string().nullable().describe("Subcategoría opcional."),
-  fecha: z.string().describe("Fecha de la transacción (ISO o relativa)."),
-  metodo_pago: z
-    .string()
-    .nullable()
-    .describe("Método de pago utilizado (ej. Efectivo, Tarjeta)."),
-  confianza: z
-    .number()
-    .describe("Nivel de confianza en la extracción (0.0 a 1.0)."),
-  pregunta_aclaratoria: z
-    .string()
-    .nullable()
-    .describe("Pregunta para el usuario si falta información."),
-  razonamiento: z.string().describe("Breve explicación de la clasificación."),
-});
-
-type TransactionParsed = z.infer<typeof TransactionSchema>;
 
 type APIResponse = {
   success: boolean;
@@ -101,26 +66,15 @@ export async function POST(request: Request) {
       .map((p) => `- ${p.name}`)
       .join("\n");
 
-    // 4. Call Langchain / OpenAI
-    const model = new ChatOpenAI({
-      modelName: "gpt-4o-mini", // Or gpt-3.5-turbo if preferred for cost
-      temperature: 0.7,
-      openAIApiKey: process.env.OPENAI_API_KEY,
-    }).withStructuredOutput(TransactionSchema);
-
-    // Construct the full prompt with history
+    // 4. Construct the full prompt with history
     const messages = [
-      new SystemMessage(SYSTEM_PROMPT(categoryList, paymentMethodList)),
-      ...history.map((h) =>
-        h.role === "user"
-          ? new HumanMessage(h.content)
-          : new AIMessage(h.content),
-      ),
-      new HumanMessage(message),
+      { role: "system", content: SYSTEM_PROMPT(categoryList, paymentMethodList) },
+      ...history,
+      { role: "user", content: message },
     ];
 
     // Call the model with a timeout
-    const responsePromise = model.invoke(messages);
+    const responsePromise = getStructuredChatCompletion(messages, "gpt-4o-mini");
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Timeout calling AI service")), 30000),
     );
@@ -129,6 +83,10 @@ export async function POST(request: Request) {
       responsePromise,
       timeoutPromise,
     ])) as TransactionParsed;
+
+    if (!result) {
+      throw new Error("No se pudo obtener una respuesta válida de la IA.");
+    }
 
     console.log("AI Response:", result);
 

@@ -1,10 +1,5 @@
-export const SYSTEM_PROMPT: (
-  categoryList: string,
-  paymentMethodList: string,
-) => string = (
-  categoryList,
-  paymentMethodList,
-) => `Eres un asistente financiero que ayuda a registrar transacciones de forma conversacional.
+export function SYSTEM_PROMPT(categoryList: string, paymentMethodList: string) {
+  return `Eres un asistente financiero que ayuda a registrar transacciones de forma conversacional.
 
 REGLAS ESTRICTAS:
 1. Extrae SIEMPRE: monto, tipo (ingreso/gasto), categoría.
@@ -38,3 +33,4 @@ IMPORTANTE:
 - Se estricto con las categorías.
 - Si no estás seguro de la categoría, pon confianza < 0.8 y sugiere opciones.
 `;
+}
