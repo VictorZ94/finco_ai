@@ -1,35 +1,22 @@
 import OpenAI from "openai";
-import { zodResponseFormat } from "openai/helpers/zod";
+import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 // Define the schema for structured output
-export const TransactionSchema = z.object({
-  monto: z.number().describe("El monto de la transacción."),
-  tipo: z
-    .enum(["ingreso", "gasto"])
-    .describe("El tipo de transacción: ingreso o gasto."),
-  categoria: z
-    .string()
-    .describe(
-      "La categoría de la transacción, debe coincidir con la lista proporcionada.",
-    ),
-  subcategoria: z.string().nullable().describe("Subcategoría opcional."),
-  fecha: z.string().describe("Fecha de la transacción (ISO o relativa)."),
-  metodo_pago: z
-    .string()
-    .nullable()
-    .describe("Método de pago utilizado (ej. Efectivo, Tarjeta)."),
-  confianza: z
-    .number()
-    .describe("Nivel de confianza en la extracción (0.0 a 1.0)."),
-  pregunta_aclaratoria: z
-    .string()
-    .nullable()
-    .describe("Pregunta para el usuario si falta información."),
-  razonamiento: z.string().describe("Breve explicación de la clasificación."),
+const TransactionSchema = z.object({
+  amount: z.number().positive(),
+  category: z.string().min(1),
+  paymentMethod: z.string().min(1),
+  description: z.string().min(1),
+  intent: z.enum(["expense", "income", "transfer", "payment"]),
 });
 
-export type TransactionParsed = z.infer<typeof TransactionSchema>;
+const UnifiedSchema = z.object({
+  mode: z.enum(["chat", "clarification", "transaction_ready"]),
+  message: z.string().optional().nullable(),
+  missingFields: z.array(z.string()).optional().nullable(),
+  transaction: TransactionSchema.optional().nullable(),
+});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -44,9 +31,9 @@ export async function getStructuredChatCompletion(
 ) {
   const response = await openai.responses.parse({
     model,
-    messages,
+    input: messages,
     text: {
-      format: zodResponseFormat(TransactionSchema, "transaction"),
+      format: zodTextFormat(UnifiedSchema, "transaction_response"),
     },
   });
 
