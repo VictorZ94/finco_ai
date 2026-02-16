@@ -3,12 +3,16 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 // Define the schema for structured output
-const TransactionSchema = z.object({
+export const TransactionSchema = z.object({
   amount: z.number().positive(),
   category: z.string().min(1),
   paymentMethod: z.string().min(1),
+  date: z.string().refine((val) => {
+    // Validate ISO date format
+    return !isNaN(Date.parse(val));
+  }),
   description: z.string().min(1),
-  intent: z.enum(["expense", "income", "transfer", "payment"]),
+  type: z.enum(["expense", "income"]),
 });
 
 const UnifiedSchema = z.object({

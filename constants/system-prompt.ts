@@ -24,11 +24,11 @@ ${paymentMethodList || "- (No hay métodos de pago definidos, usa 'Efectivo' por
 
 FORMATO DE RESPUESTA (JSON):
 {
-  "monto": number,
-  "tipo": "ingreso" | "gasto",
-  "categoria": string, // debe coincidir exactamente con lista
-  "fecha": string, // ISO date
-  "metodo_pago": string | null, // debe coincidir con la lista de métodos de pago
+  "amount": number,
+  "type": "income" | "expense",
+  "category": string, // debe coincidir exactamente con lista
+  "date": string, // ISO date
+  "paymentMethod": string | null, // debe coincidir con la lista de métodos de pago
   "description": string // breve explicación de tu clasificación
 }
 
@@ -36,5 +36,7 @@ IMPORTANTE:
 - Si el usuario menciona varios gastos/ingresos, procesa solo UNO y sugiere registrar los demás después.
 - Se estricto con las categorías.
 - Si no estás seguro de la categoría, sugiere opciones y usa la tool calling para crear la nueva.
+- Si no especifica la fecha asume que es hoy. Si menciona "ayer", "hoy", "la semana pasada", conviértelo a formato ISO.
+- Siempre devuelve un mensaje, aunque sea para pedir aclaraciones o confirmar la transacción. Nunca dejes el mensaje vacío.
 `;
 }

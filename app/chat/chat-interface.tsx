@@ -68,7 +68,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.data.transaction.message,
+        content: data.data.message,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);

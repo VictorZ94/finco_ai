@@ -1,4 +1,5 @@
 import { SYSTEM_PROMPT } from "@/constants/system-prompt";
+import { createAccountingTransactionFromChat } from "@/lib/function-tool";
 import {
   getCategories,
   getPaymentMethods,
@@ -13,10 +14,10 @@ import { NextResponse } from "next/server";
 type APIResponse = {
   success: boolean;
   data?: {
-    transaccion: string;
-    requiere_confirmacion: boolean;
-    mensaje_usuario: string;
-    transaccion_id?: string;
+    transaction: string;
+    missingFields?: string[];
+    message: string;
+    transactionId?: string;
   };
   error?: string;
 };
@@ -61,15 +62,32 @@ export async function POST(request: Request) {
         { role: "user", content: message },
       ];
 
-      console.log("Messages sent to LLM:", messages);
-
-      // Call the model
       const result = await getStructuredChatCompletion(messages, "gpt-4o-mini");
-      console.log("LLM Result:", result);
+      let transactionId = null;
+
+      switch (result!.mode) {
+        case "chat":
+          break;
+
+        case "clarification":
+          break;
+
+        case "transaction_ready":
+          const transaction = await createAccountingTransactionFromChat(
+            result!.transaction,
+            targetUserId,
+          );
+          transactionId = transaction.id;
+          break;
+      }
+
       return NextResponse.json({
         success: true,
         data: {
-          transaction: result,
+          message: result!.message,
+          missingFields: result!.missingFields,
+          transaction: result!.transaction,
+          transactionId: transactionId,
         },
       });
     } catch (error) {

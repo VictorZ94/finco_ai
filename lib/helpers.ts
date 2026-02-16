@@ -56,8 +56,35 @@ export async function findAccountByName(userId: string, name: string) {
   return await prisma.financialAccounts.findFirst({
     where: {
       userId,
-      name: { equals: name, mode: "insensitive" },
+      name: { contains: name, mode: "insensitive" },
       canReceiveMovement: true,
     },
   });
+}
+
+export async function getNumbering(userId: string): Promise<string> {
+  const currentYear = new Date().getFullYear();
+
+  const lastTransaction = await prisma.transactions.findFirst({
+    where: {
+      userId: userId,
+      numbering: {
+        startsWith: `${currentYear}-`,
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      numbering: true,
+    },
+  });
+
+  let nextNumber = 1;
+  if (lastTransaction) {
+    const lastCount = parseInt(lastTransaction.numbering.split("-")[1]);
+    nextNumber = lastCount + 1;
+  }
+
+  return `${currentYear}-${nextNumber}`;
 }
