@@ -43,3 +43,18 @@ export async function getStructuredChatCompletion(
 
   return response.output_parsed;
 }
+
+/**
+ * Basic chat completion for simple text responses (e.g., summarization).
+ */
+export async function getChatCompletion(
+  messages: any[],
+  model: string = "gpt-4o-mini",
+) {
+  const response = await openai.chat.completions.create({
+    model,
+    messages,
+  });
+
+  return response.choices[0].message.content;
+}

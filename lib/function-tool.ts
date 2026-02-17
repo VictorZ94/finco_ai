@@ -4,6 +4,7 @@ import { findAccountByName, getNumbering } from "./helpers";
 export const createAccountingTransactionFromChat = async (
   transaction: any,
   userId: string,
+  messageId?: string,
 ) => {
   const numbering = await getNumbering(userId);
   const accountCategory = await findAccountByName(userId, transaction.category);
@@ -19,6 +20,7 @@ export const createAccountingTransactionFromChat = async (
         date: new Date(transaction.date),
         numbering,
         userId,
+        messageId,
         ledgerEntries: {
           createMany: {
             data: [

@@ -1,10 +1,11 @@
 "use client";
 
+import { Role } from "@/generated/prisma/enums";
 import { useEffect, useRef, useState } from "react";
 
 type Message = {
   id: string;
-  role: "user" | "assistant";
+  role: Role;
   content: string;
 };
 
@@ -20,7 +21,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      role: "assistant",
+      role: Role.ASSISTANT,
       content: `Hola ${user.name || "usuario"}, soy tu asistente financiero. ¿En qué puedo ayudarte hoy?`,
     },
   ]);
@@ -36,13 +37,36 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const response = await fetch("/api/messages", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch messages");
+        }
+
+        const messages = await response.json();
+        console.log("Fetched messages:", messages);
+        setMessages((prev) => [...prev, ...messages]);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+    };
+
+    fetchMessages();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      role: "user",
+      role: Role.USER,
       content: input,
     };
 
@@ -67,7 +91,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: "assistant",
+        role: Role.ASSISTANT,
         content: data.data.message,
       };
 
@@ -76,7 +100,7 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
       console.error("Error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: "assistant",
+        role: Role.ASSISTANT,
         content:
           "Lo siento, hubo un error procesando tu mensaje. Por favor intenta de nuevo.",
       };
@@ -93,12 +117,12 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
           <div
             key={m.id}
             className={`flex ${
-              m.role === "user" ? "justify-end" : "justify-start"
+              m.role === Role.USER ? "justify-end" : "justify-start"
             }`}
           >
             <div
               className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                m.role === "user"
+                m.role === Role.USER
                   ? "bg-blue-600 text-white rounded-br-none"
                   : "bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 text-gray-800 dark:text-gray-200 rounded-bl-none shadow-sm"
               }`}

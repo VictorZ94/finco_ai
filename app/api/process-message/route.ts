@@ -1,9 +1,13 @@
 import { SYSTEM_PROMPT } from "@/constants/system-prompt";
+import { Role } from "@/generated/prisma/client";
 import { createAccountingTransactionFromChat } from "@/lib/function-tool";
 import {
   getCategories,
+  getOrCreateConversation,
   getPaymentMethods,
   getUserContext,
+  saveMessage,
+  updateSummary,
 } from "@/lib/helpers";
 import { getStructuredChatCompletion } from "@/lib/llm-config";
 import { Session, verifyServerAuth } from "@/lib/middlewares/verify-auth";
@@ -38,12 +42,22 @@ export async function POST(request: Request) {
       }
       const targetUserId = session!.user.id;
 
+      // 1. Get/Create Conversation and Save User Message
+      const conversation = await getOrCreateConversation(targetUserId);
+      const userMessage = await saveMessage(
+        targetUserId,
+        conversation.id,
+        Role.USER,
+        message,
+      );
+
       // 2. Fetch Context & Categories
-      const [history, categories, paymentMethods] = await Promise.all([
-        getUserContext(targetUserId),
-        getCategories(targetUserId),
-        getPaymentMethods(targetUserId),
-      ]);
+      const [{ history, conversationId }, categories, paymentMethods] =
+        await Promise.all([
+          getUserContext(targetUserId),
+          getCategories(targetUserId),
+          getPaymentMethods(targetUserId),
+        ]);
 
       const categoryList = categories
         .map((c) => `- ${c.nombre} (${c.tipo})`)
@@ -59,11 +73,20 @@ export async function POST(request: Request) {
           content: SYSTEM_PROMPT(categoryList, paymentMethodList),
         },
         ...history,
-        { role: "user", content: message },
       ];
 
       const result = await getStructuredChatCompletion(messages, "gpt-4o-mini");
       let transactionId = null;
+
+      if (result?.message) {
+        // Save Assistant Response
+        await saveMessage(
+          targetUserId,
+          conversationId,
+          Role.ASSISTANT,
+          result.message,
+        );
+      }
 
       switch (result!.mode) {
         case "chat":
@@ -76,10 +99,16 @@ export async function POST(request: Request) {
           const transaction = await createAccountingTransactionFromChat(
             result!.transaction,
             targetUserId,
+            userMessage.id,
           );
           transactionId = transaction.id;
           break;
       }
+
+      // 5. Update summary in the background
+      updateSummary(conversationId).catch((err) =>
+        console.error("Error updating summary:", err),
+      );
 
       return NextResponse.json({
         success: true,

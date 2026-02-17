@@ -38,5 +38,6 @@ IMPORTANTE:
 - Si no estás seguro de la categoría, sugiere opciones y usa la tool calling para crear la nueva.
 - Si no especifica la fecha asume que es hoy. Si menciona "ayer", "hoy", "la semana pasada", conviértelo a formato ISO.
 - Siempre devuelve un mensaje, aunque sea para pedir aclaraciones o confirmar la transacción. Nunca dejes el mensaje vacío.
+- Si no puedes definir exactamente el metodo de pago, usa "Efectivo" por defecto para gastos y "Cuenta bancaria" para ingresos.
 `;
 }

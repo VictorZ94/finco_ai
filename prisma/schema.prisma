@@ -29,6 +29,7 @@ model User {
   messages          Messages[]
   financialAccounts FinancialAccounts[]
   transactions      Transactions[]
+  conversations     Conversation[]
 
   @@map("user")
 }
@@ -79,6 +80,31 @@ model Verification {
   @@map("verification")
 }
 
+model Conversation {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messages Messages[]
+  memory   ConversationMemory?
+
+  @@map("conversations")
+}
+
+model ConversationMemory {
+  id        String   @id @default(uuid())
+  summary   String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  conversationId String       @unique
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("conversation_memory")
+}
+
 // Renamed from Accounts to avoid conflict with Auth Account
 model FinancialAccounts {
   id     String  @id @default(uuid())
@@ -107,7 +133,7 @@ model FinancialAccounts {
 
 model Messages {
   id      String @id @default(uuid())
-  content String
+  content String @db.Text
   role    Role   @default(ASSISTANT)
 
   createdAt DateTime @default(now())
@@ -115,7 +141,13 @@ model Messages {
 
   userId       String
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
   transactions Transactions[]
+
+  @@map("messages")
 }
 
 model Transactions {
@@ -132,6 +164,8 @@ model Transactions {
   messageId     String?
   message       Messages?        @relation(fields: [messageId], references: [id], onDelete: Cascade)
   ledgerEntries LedgerEntries[]
+
+  @@map("transactions")
 }
 
 model LedgerEntries {
@@ -146,11 +180,14 @@ model LedgerEntries {
   transaction   Transactions @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   accountId     String
   account       FinancialAccounts     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("ledger_entries")
 }
 
 enum Role {
   USER
   ASSISTANT
+  SYSTEM
 }
 
 enum AccountType {
