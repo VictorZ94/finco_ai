@@ -60,11 +60,14 @@ export async function POST(request: Request) {
         ]);
 
       const categoryList = categories
-        .map((c) => `- ${c.nombre} (${c.tipo})`)
+        .map((c) => `- [${c.codigo}] ${c.nombre} (${c.tipo})`)
         .join("\n");
       const paymentMethodList = paymentMethods
-        .map((p) => `- ${p.name}`)
+        .map((p) => `- [${p.codigo}] ${p.nombre}`)
         .join("\n");
+
+      console.log("categoryList", categoryList);
+      console.log("paymentMethodList", paymentMethodList);
 
       // 4. Construct the full prompt with history
       const messages = [
@@ -75,8 +78,10 @@ export async function POST(request: Request) {
         ...history,
       ];
 
-      const result = await getStructuredChatCompletion(messages, "gpt-4o-mini");
+      const result = await getStructuredChatCompletion(messages, "gpt-5-mini");
       let transactionId = null;
+
+      console.log("LLM Result:", result);
 
       if (result?.message) {
         // Save Assistant Response
