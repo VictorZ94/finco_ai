@@ -17,45 +17,19 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
-const transactions = [
-  {
-    date: '2024-07-28',
-    description: 'Bonsai Coffee Roasters',
-    category: 'Food',
-    amount: '-$12.50',
-    status: 'Completed',
-  },
-  {
-    date: '2024-07-27',
-    description: 'Netflix Subscription',
-    category: 'Entertainment',
-    amount: '-$15.99',
-    status: 'Completed',
-  },
-  {
-    date: '2024-07-26',
-    description: 'Salary Deposit',
-    category: 'Income',
-    amount: '+$5,000.00',
-    status: 'Completed',
-  },
-  {
-    date: '2024-07-25',
-    description: 'Amazon Purchase',
-    category: 'Shopping',
-    amount: '-$250.75',
-    status: 'Pending',
-  },
-  {
-    date: '2024-07-24',
-    description: 'Gas Bill',
-    category: 'Utilities',
-    amount: '-$75.00',
-    status: 'Completed',
-  },
-];
+interface Transaction {
+  date: string;
+  description: string;
+  category: string;
+  amount: string;
+  status: string;
+}
 
-const RecentTransactions = () => {
+interface RecentTransactionsProps {
+  transactions?: Transaction[];
+}
+
+const RecentTransactions = ({ transactions = [] }: RecentTransactionsProps) => {
   return (
     <Card className="rounded-lg border-0 shadow-sm">
       <CardHeader>
@@ -65,46 +39,52 @@ const RecentTransactions = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((transaction, index) => (
-              <TableRow key={index}>
-                <TableCell>{transaction.date}</TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell>{transaction.category}</TableCell>
-                <TableCell
-                  className={
-                    transaction.amount.startsWith('+')
-                      ? 'text-green-500'
-                      : 'text-red-500'
-                  }
-                >
-                  {transaction.amount}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      transaction.status === 'Completed'
-                        ? 'default'
-                        : 'secondary'
+        {transactions.length === 0 ? (
+          <div className="flex items-center justify-center py-10">
+            <p className="text-muted-foreground">No recent transactions found.</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((transaction, index) => (
+                <TableRow key={index}>
+                  <TableCell>{transaction.date}</TableCell>
+                  <TableCell>{transaction.description}</TableCell>
+                  <TableCell>{transaction.category}</TableCell>
+                  <TableCell
+                    className={
+                      transaction.amount.startsWith('+')
+                        ? 'text-green-500 font-medium'
+                        : 'text-red-500 font-medium'
                     }
                   >
-                    {transaction.status}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                    {transaction.amount}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        transaction.status === 'Completed'
+                          ? 'default'
+                          : 'secondary'
+                      }
+                    >
+                      {transaction.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );
