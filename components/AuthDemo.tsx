@@ -35,8 +35,6 @@ export default function AuthDemo() {
 
   if (isPending) return <div>Loading session...</div>;
 
-  console.log("session", session);
-
   if (session) {
     return (
       <div className="p-4 border rounded shadow-md bg-white dark:bg-zinc-800">

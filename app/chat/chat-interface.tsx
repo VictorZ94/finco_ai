@@ -50,7 +50,6 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
         }
 
         const messages = await response.json();
-        console.log("Fetched messages:", messages);
         setMessages((prev) => [...prev, ...messages]);
       } catch (error) {
         console.error("Error fetching messages:", error);
