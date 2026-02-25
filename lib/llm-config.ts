@@ -5,8 +5,14 @@ import { z } from "zod";
 // Define the schema for structured output
 export const TransactionSchema = z.object({
   amount: z.number().positive(),
-  category: z.string().min(1),
-  paymentMethod: z.string().min(1),
+  category: z.object({
+    name: z.string().min(1),
+    code: z.string().optional().nullable(),
+  }),
+  paymentMethod: z.object({
+    name: z.string().min(1),
+    code: z.string().optional().nullable(),
+  }),
   date: z.string().refine((val) => {
     // Validate ISO date format
     return !isNaN(Date.parse(val));
@@ -31,7 +37,7 @@ const openai = new OpenAI({
  */
 export async function getStructuredChatCompletion(
   messages: any[],
-  model: string = "gpt-4o-mini",
+  model: string = "gpt-5-mini",
 ) {
   const response = await openai.responses.parse({
     model,
