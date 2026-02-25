@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Finco AI - Intelligent Financial Assistant
 
-## Getting Started
+Finco AI is a modern, conversational financial management application designed to simplify bookkeeping through AI. It allows users to manage their personal or business finances using natural language, automatically transforming chat messages into structured double-entry accounting records.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Conversational Accounting**: Register expenses, income, and transfers just by talking to the AI.
+- **Fault-Tolerant Account Creation**: If the AI detects a new category (e.g., "Medical Exams"), it automatically creates the corresponding accounting account following professional standards.
+- **Double-Entry System**: Built on a solid ledger-based architecture (Assets, Liabilities, Equity, Income, Expenses).
+- **Dynamic Chart of Accounts**: Real-time hierarchical visualization of your financial structure with automatic balance roll-ups.
+- **Real-time Dashboard**: Visual insights into income vs. expenses, distribution by category, and net balance.
+- **Intelligent Memory**: The assistant remembers your preferences and previous financial decisions to provide a personalized experience.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Frontend**: [Next.js 16](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [Tailwind CSS v4](https://tailwindcss.com/)
+- **Backend**: Next.js Route Handlers, [Server Components](https://nextjs.org/docs/app/building-your-application/rendering/server-components)
+- **Database & ORM**: [PostgreSQL](https://www.postgresql.org/), [Prisma ORM](https://www.prisma.io/)
+- **AI Engine**: [OpenAI GPT-4o-mini](https://openai.com/) via [Vercel AI SDK](https://sdk.vercel.ai/)
+- **Authentication**: [Better Auth](https://better-auth.com/)
+- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📋 Prerequisites
 
-## Learn More
+- Node.js 20+
+- PostgreSQL instance
+- OpenAI API Key
 
-To learn more about Next.js, take a look at the following resources:
+## ⚙️ Setup Instructions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd finco_ai_app
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-## Deploy on Vercel
+3. **Environment Variables**:
+   Create a `.env` file in the root directory:
+   ```env
+   DATABASE_URL="postgresql://user:password@localhost:5432/finco_db?schema=public"
+   OPENAI_API_KEY="your_openai_api_key"
+   BETTER_AUTH_SECRET="your_auth_secret"
+   BETTER_AUTH_URL="http://localhost:3000"
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+4. **Database Setup**:
+   ```bash
+   npx prisma generate
+   npx prisma migrate dev --name init
+   npm run seed # Optional: To populate basic Chart of Accounts
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+5. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+## 🏗️ Project Structure
+
+- `app/`: Next.js pages, API routes, and layouts.
+- `components/`: Reusable UI components (Dashboard, Chat, Charts).
+- `lib/`: Core logic, AI configurations, Prisma client, and helper functions.
+- `prisma/`: Database schema and migration files.
+- `constants/`: System prompts and application constants.
+
+## 👤 Author
+
+Developed by **Victor Zuluaga** ([@zrvictor00](https://github.com/zrvictor00)).
+
+---
+*Finco AI - Making accounting as simple as a text message.*
